@@ -1,0 +1,58 @@
+#! /bin/sh
+
+### BEGIN INIT INFO
+# Provides:          flagbot
+# Required-Start:    $local_fs
+# Required-Stop:     $local_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# X-Interactive:     false
+# Short-Description: InSecurity Flagbot init script
+# Description:       InSecurity Flagbot init script
+### END INIT INFO
+
+DESC="InSecurity Flagbot init script"
+NAME=flagbot
+#DAEMON=
+SCRIPT_PATH=/root/slackbot/flagbot.py
+
+do_start()
+{
+   echo "Starting flagbot!"
+   start-stop-daemon --make-pidfile --start --quiet --background --oknodo --pidfile /var/run/flagbot.pid --exec ${SCRIPT_PATH}
+   echo "flagbot started"
+}
+
+do_stop()
+{
+   echo "Stopping flagbot!"
+   start-stop-daemon --make-pidfile --stop --quiet --oknodo --pidfile /var/run/flagbot.pid 
+   rm -f /var/run/flagbot.pid
+   echo "flagbot stopped"
+}
+
+
+case "$1" in
+   start)
+     do_start
+     ;;
+   stop)
+     do_stop
+     ;;
+   restart)
+     do_stop
+     do_start
+     ;;
+   status)
+     if [ -f "/var/run/flagbot.pid" ]; then
+        echo "Flagbot is running :D"
+     else
+        echo "Flagbot is shutdown :/"
+     fi
+     ;;
+   *)
+       echo "Usage: $0 {start|stop|restart|status}"
+       exit 1
+esac
+
+exit 0

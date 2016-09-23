@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS checktimestamp(timestamp VARCHAR(64))
+CREATE TABLE IF NOT EXISTS participate(ctfId INTEGER PRIMARY KEY, begins INTEGER, ends INTEGER, lastreminded INTEGER)
