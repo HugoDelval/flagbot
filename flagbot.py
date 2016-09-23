@@ -76,7 +76,11 @@ def participate_db(ctfId, begints, endts):
 
 def participate_ctf(message):
 	eventid=int(message['text'].split()[1])
-	event=ctftime.get_event(eventid)
+	try:
+		event = ctftime.get_event(eventid)
+	except Exception as e:
+		slack.chat.post_message(CHANNEL_ANNONCE, "Oh come on! Stop making me crash. Here is your error : " + str(e))
+		return
 	if eventid in get_participate_ids():
 		slack.chat.post_message(CHANNEL_ANNONCE,'Already registered to CTF '+event.title)
 	else:
@@ -132,7 +136,11 @@ def extract_info_event(event):
 
 def info_ctf(message):
 	eventid=message['text'].split()[1]
-	event=ctftime.get_event(int(eventid))
+	try:
+		event = ctftime.get_event(int(eventid))
+	except Exception as e:
+		slack.chat.post_message(CHANNEL_ANNONCE, "Oh come on! Stop making me crash. Here is your error : " + str(e))
+		return
 	msgtime = extract_info_event(event)
 	slack.chat.post_message(CHANNEL_ANNONCE,event.title+"\n"+msgtime)
 
@@ -146,7 +154,11 @@ def process(message):
 
 
 def fetch_next_events():
-	upcomming_events = ctftime.get_next_events()
+	try:
+		upcomming_events = ctftime.get_next_events()
+	except Exception as e:
+		slack.chat.post_message(CHANNEL_ANNONCE, "Oh come on! Stop making me crash. Here is your error : " + str(e))
+		return
 	if upcomming_events:
 		slack.chat.post_message(CHANNEL_ANNONCE, "Hey @channel, there is upcoming CTFs !!")
 	for event in upcomming_events:
