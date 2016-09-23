@@ -34,7 +34,7 @@ def get_check_timestamp():
 
 def set_check_timestamp(ts):
 	if type(ts)!=type(1.0):
-		print('timestamp format error : got >'+str(ts)+'<, expected float')
+		raise Exception('timestamp format error : got >'+str(ts)+'<, expected float')
 		return
 	db.execute('DELETE FROM checktimestamp')
 	db.execute('INSERT INTO checktimestamp VALUES(\''+str(ts)+'\')')
@@ -42,13 +42,47 @@ def set_check_timestamp(ts):
 
 def get_unread():
 	ts=time.time()
-	res=slack.channels.history(CHANNEL_ANNONCE,oldest=int(get_check_timestamp())).body['messages']
+	res=slack.channels.history(CHANNEL_ANNONCE,latest=int(ts),oldest=int(get_check_timestamp())).body['messages']
 	set_check_timestamp(ts)
 	return res
 
+def get_participate():
+	ctflist=[]
+	for res in db.execute('SELECT * FROM participate'):
+		if len(res)!=4:
+			raise Exception('Invalid number of columns for participate')
+		ctflist.append({'id':res[0],'start':res[1],'end':res[2],'lastreminded':res[3]})
+	return ctflist
+
+def get_participate_ids():
+        idlist=[]
+        for res in db.execute('SELECT * FROM participate'):
+                if len(res)!=4:
+                        raise Exception('Invalid number of columns for participate')
+                idlist.append(res[0])
+        return idlist
+
+def participate_db(ctfId,begints,endts):
+	db.execute('INSERT INTO participate VALUES ('+str(int(ctfId))+','+str(int(begints))+','+str(int(endts))+','+str(int(time.time()))+')')
+	conn.commit()
+
 def participate_ctf(message):
-	eventid=message['text'].split()[1]
-	print(ctftime.get_event(int(eventid)))
+	eventid=int(message['text'].split()[1])
+	event=ctftime.get_event(eventid)
+	if eventid in get_participate_ids():
+		slack.chat.post_message(CHANNEL_ANNONCE,'Already registered to CTF '+event.title)
+	else:
+		datestart=parse(event.start_ts)
+		dateend=parse(event.finish_ts)
+		tsstart=datestart.timestamp()
+		tsend=dateend.timestamp()
+		if time.time()>tsend:
+			slack.chat.post_message(CHANNEL_ANNONCE,'CTF '+event.title+' has already ended.')
+		else:
+			participate_db(eventid,tsstart,tsend)
+			slack.chat.post_message(CHANNEL_ANNONCE,'Successfully registered to CTF !')
+			info_ctf(message)
+			
 
 def wdh_from_delta(delta):
 	delta=abs(int(delta))
@@ -92,7 +126,7 @@ def info_ctf(message):
 def process(message):
 	for x in CTF_COMMANDS:
 		if message['text'].startswith('!'+x+' '):
-			participate(message)
+			participate_ctf(message)
 	if message['text'].startswith('!info'):
 		info_ctf(message)
 
