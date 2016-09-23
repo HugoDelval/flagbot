@@ -20,6 +20,7 @@ with open('/root/slackbot/config.json') as f:
 	CHANNEL_ANNONCE = config['CHANNEL_ANNONCE']
 slack=Slacker(slack_token)
 
+
 def exec_db_script(filename):
 	fi=open(filename,'r')
 	for line in fi.readlines():
@@ -28,9 +29,11 @@ def exec_db_script(filename):
 	fi.close()
 	conn.commit()
 
+
 def get_check_timestamp():
 	for res in db.execute('SELECT timestamp FROM checktimestamp'):
 		return float(res[0])
+
 
 def set_check_timestamp(ts):
 	if type(ts)!=type(1.0):
@@ -40,11 +43,13 @@ def set_check_timestamp(ts):
 	db.execute('INSERT INTO checktimestamp VALUES(\''+str(ts)+'\')')
 	conn.commit()
 
+
 def get_unread():
 	ts=time.time()
 	res=slack.channels.history(CHANNEL_ANNONCE,latest=int(ts),oldest=int(get_check_timestamp())).body['messages']
 	set_check_timestamp(ts)
 	return res
+
 
 def get_participate():
 	ctflist=[]
@@ -54,6 +59,7 @@ def get_participate():
 		ctflist.append({'id':res[0],'start':res[1],'end':res[2],'lastreminded':res[3]})
 	return ctflist
 
+
 def get_participate_ids():
         idlist=[]
         for res in db.execute('SELECT * FROM participate'):
@@ -62,9 +68,11 @@ def get_participate_ids():
                 idlist.append(res[0])
         return idlist
 
-def participate_db(ctfId,begints,endts):
+
+def participate_db(ctfId, begints, endts):
 	db.execute('INSERT INTO participate VALUES ('+str(int(ctfId))+','+str(int(begints))+','+str(int(endts))+','+str(int(time.time()))+')')
 	conn.commit()
+
 
 def participate_ctf(message):
 	eventid=int(message['text'].split()[1])
@@ -82,7 +90,7 @@ def participate_ctf(message):
 			participate_db(eventid,tsstart,tsend)
 			slack.chat.post_message(CHANNEL_ANNONCE,'Successfully registered to CTF !')
 			info_ctf(message)
-			
+
 
 def wdh_from_delta(delta):
 	delta=abs(int(delta))
@@ -149,12 +157,18 @@ def fetch_next_events():
 exec_db_script('/root/slackbot/flagbot.sql')
 last_timestamp_fetch_next_events = 0
 
-while True:
-	unread=get_unread()
-	for message in unread:
-		process(message)
-	time.sleep(2)
-	if last_timestamp_fetch_next_events < time.time() - 3*24*60*60:
-		fetch_next_events()
-		last_timestamp_fetch_next_events = time.time()
-
+try:
+	while True:
+		unread=get_unread()
+		for message in unread:
+			try:
+				process(message)
+			except ValueError as e:
+				slack.chat.post_message(CHANNEL_ANNONCE, "Oh come on! Stop playing :p. You've triggered a cast error.")
+		time.sleep(2)
+		if last_timestamp_fetch_next_events < time.time() - 3*24*60*60:
+			fetch_next_events()
+			last_timestamp_fetch_next_events = time.time()
+except:
+	import os
+	os.remove('/var/run/flagbot.pid')
