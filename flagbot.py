@@ -5,14 +5,17 @@ import sqlite3
 import time
 import sys
 from datetime import datetime
+import json
 
 
-CHANNEL_ANNONCE='C2F0CAZQ9'
 CTF_COMMANDS=['ctf','play','hack']
 conn=sqlite3.connect('/root/slackbot/flagbot.db')
 db=conn.cursor()
-slack=Slacker('xoxb-82968660485-8TXMs4NswNdQxI1pJ4kXSxww')
-
+with open('/root/slackbot/config.json') as f:
+	config = json.loads(f.read())
+	slack_token = config['slack_token']
+	CHANNEL_ANNONCE = config['CHANNEL_ANNONCE']
+slack=Slacker(slack_token)
 
 def exec_db_script(filename):
 	fi=open(filename,'r')
@@ -50,8 +53,9 @@ def info_ctf(message):
 	datestart = datetime.strptime(event.start_ts,"%Y-%m-%dT%H:%M:%S+00:00")
 	dateend = datetime.strptime(event.finish_ts,"%Y-%m-%dT%H:%M:%S+00:00")
 	print(datestart)
-	tsstart=time.mktime(datestart.timetuple())
-	tsend=time.mktime(dateend.timetuple())
+	DAY=24*60*60
+	tsstart=(datestart.toordinal() - datetime(1970, 1, 1, 0, 0, 0).toordinal()) * DAY
+	tsend=(dateend.toordinal() - datetime(1970, 1, 1, 0, 0, 0).toordinal()) * DAY
 	slack.chat.post_message(CHANNEL_ANNONCE,event.title+' '+str(tsstart)+' '+str(tsend))
 	
 def process(message):
