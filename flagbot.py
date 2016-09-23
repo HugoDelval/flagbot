@@ -6,6 +6,9 @@ import time
 import sys
 from datetime import datetime
 import json
+import pytz
+from dateutil.parser import parse
+
 
 
 CTF_COMMANDS=['ctf','play','hack']
@@ -50,12 +53,12 @@ def participate_ctf(message):
 def info_ctf(message):
 	eventid=message['text'].split()[1]
 	event=ctftime.get_event(int(eventid))
-	datestart = datetime.strptime(event.start_ts,"%Y-%m-%dT%H:%M:%S+00:00")
-	dateend = datetime.strptime(event.finish_ts,"%Y-%m-%dT%H:%M:%S+00:00")
+	datestart = parse(event.start_ts)
+	dateend = parse(event.finish_ts)
+	tsstart=datestart.timestamp()
+	tsend=dateend.timestamp()
+	print(tsstart)
 	print(datestart)
-	DAY=24*60*60
-	tsstart=(datestart.toordinal() - datetime(1970, 1, 1, 0, 0, 0).toordinal()) * DAY
-	tsend=(dateend.toordinal() - datetime(1970, 1, 1, 0, 0, 0).toordinal()) * DAY
 	slack.chat.post_message(CHANNEL_ANNONCE,event.title+' '+str(tsstart)+' '+str(tsend))
 	
 def process(message):

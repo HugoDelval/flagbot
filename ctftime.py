@@ -1,6 +1,6 @@
 import json
 import requests
-import datetime
+import datetime, time
 import ctftime_object
 
 url_ctftime = "https://ctftime.org/api/v1"
@@ -29,8 +29,8 @@ def get_next_events(number_of_weeks=1):
     number_of_weeks = int(number_of_weeks)
     if number_of_weeks < 1 or number_of_weeks > 10:
         return "An error occured during the request to ctftime.org The number of weeks should be >= 1 and <=10"
-    current_time = datetime.date.today()
-    next_time = current_time + datetime.timedelta(days=(7*number_of_weeks))
+    current_time = int(time.time())
+    next_time = current_time + (60*60*24*7*number_of_weeks)
     res_next_events = requests.get(url_ctftime + event_endpoint + "?limit=100&start=" + str(current_time) + "&finish=" + str(next_time))
     if res_next_events.status_code != 200:
         return "An error occured. Status code : " + str(res_next_events.status_code)
