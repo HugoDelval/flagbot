@@ -42,4 +42,5 @@ class CtfTimeEvent:
         self.json = json_ctftime
    
     def __str__(self):
-        return "JSON representation : " + str(self.json)
+        import json
+        return "JSON representation : " + str(json.dumps(self.json))

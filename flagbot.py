@@ -8,7 +8,7 @@ from datetime import datetime
 import json
 import pytz
 from dateutil.parser import parse
-
+import math
 
 
 CTF_COMMANDS=['ctf','play','hack']
@@ -50,6 +50,23 @@ def participate_ctf(message):
 	eventid=message['text'].split()[1]
 	print(ctftime.get_event(int(eventid)))
 
+def wdh_from_delta(delta):
+	delta=abs(int(delta))
+	deltaW=int(delta/(7*24*60*60))
+	deltaD=int(delta/(24*60*60))%7
+	deltaH=int(delta/(60*60))%24
+	res=''
+	if deltaW:
+		res+=str(deltaW)+'w '
+	if deltaD:
+		res+=str(deltaD)+'d '
+	if deltaH:
+		res+=str(deltaH)+'h '
+	if res=='':
+		res='0h '
+	return res[:-1]
+
+
 def info_ctf(message):
 	eventid=message['text'].split()[1]
 	event=ctftime.get_event(int(eventid))
@@ -57,9 +74,20 @@ def info_ctf(message):
 	dateend = parse(event.finish_ts)
 	tsstart=datestart.timestamp()
 	tsend=dateend.timestamp()
-	print(tsstart)
-	print(datestart)
-	slack.chat.post_message(CHANNEL_ANNONCE,event.title+' '+str(tsstart)+' '+str(tsend))
+	currts=time.time()
+	if currts<tsstart:
+		delta=int(tsstart-currts)
+		deltaHtot=int(delta/(60*60))
+		msgtime='CTF will start in '
+		if deltaHtot==0:
+			msgtime='CTF is starting soon !'
+		else:
+			msgtime='CTF will start in '+wdh_from_delta(delta)
+	elif tsstart<=currts<tsend:
+		msgtime='CTF ends in '+wdh_from_delta(tsend-currts)
+	else:
+		msgtime='CTF ended '+wdh_from_delta(currts-tsend)+' ago'
+	slack.chat.post_message(CHANNEL_ANNONCE,event.title+"\n"+msgtime)
 	
 def process(message):
 	for x in CTF_COMMANDS:
@@ -74,4 +102,4 @@ while True:
 	unread=get_unread()
 	for message in unread:
 		process(message)
-	time.sleep(5)
+	time.sleep(2)
