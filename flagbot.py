@@ -101,9 +101,7 @@ def wdh_from_delta(delta):
 	return res[:-1]
 
 
-def info_ctf(message):
-	eventid=message['text'].split()[1]
-	event=ctftime.get_event(int(eventid))
+def extract_info_event(event):
 	datestart = parse(event.start_ts)
 	dateend = parse(event.finish_ts)
 	tsstart=datestart.timestamp()
@@ -121,7 +119,15 @@ def info_ctf(message):
 		msgtime='CTF ends in '+wdh_from_delta(tsend-currts)
 	else:
 		msgtime='CTF ended '+wdh_from_delta(currts-tsend)+' ago'
+	return msgtime
+
+
+def info_ctf(message):
+	eventid=message['text'].split()[1]
+	event=ctftime.get_event(int(eventid))
+	msgtime = extract_info_event(event)
 	slack.chat.post_message(CHANNEL_ANNONCE,event.title+"\n"+msgtime)
+
 	
 def process(message):
 	for x in CTF_COMMANDS:
@@ -130,10 +136,25 @@ def process(message):
 	if message['text'].startswith('!info'):
 		info_ctf(message)
 
+
+def fetch_next_events():
+	upcomming_events = ctftime.get_next_events()
+	if upcomming_events:
+		slack.chat.post_message(CHANNEL_ANNONCE, "Hey @channel, there is upcoming CTFs !!")
+	for event in upcomming_events:
+		msgtime = extract_info_event(event)
+		slack.chat.post_message(CHANNEL_ANNONCE, event.title+"\n"+msgtime)
+
+
 exec_db_script('/root/slackbot/flagbot.sql')
+last_timestamp_fetch_next_events = 0
 
 while True:
 	unread=get_unread()
 	for message in unread:
 		process(message)
 	time.sleep(2)
+	if last_timestamp_fetch_next_events < time.time() - 3*24*60*60:
+		fetch_next_events()
+		last_timestamp_fetch_next_events = time.time()
+
